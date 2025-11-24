@@ -28,6 +28,21 @@ interface Dream {
   content: string;
 }
 
+interface Order {
+  id: number;
+  date: string;
+  items: CartItem[];
+  total: number;
+  status: 'completed' | 'processing' | 'shipped';
+}
+
+interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
 const products: Product[] = [
   { id: 1, name: 'Ортопедическая подушка "Облако"', price: 3500, category: 'pillows', image: 'https://cdn.poehali.dev/projects/2aa033ad-f342-4dd9-85ff-13f25bfd6108/files/ed5c5392-ba37-4e9d-8b53-b126459a024d.jpg', description: 'Мягкая подушка с эффектом памяти' },
   { id: 2, name: 'Шелковая маска для сна', price: 1200, category: 'masks', image: 'https://cdn.poehali.dev/projects/2aa033ad-f342-4dd9-85ff-13f25bfd6108/files/ed5c5392-ba37-4e9d-8b53-b126459a024d.jpg', description: 'Блокирует 100% света' },
@@ -44,6 +59,14 @@ const Index = () => {
   const [dreamContent, setDreamContent] = useState('');
   const [activeTab, setActiveTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    name: 'Анна Смирнова',
+    email: 'anna@example.com',
+    phone: '+7 (999) 123-45-67',
+    address: 'Москва, ул. Примерная, д. 10, кв. 5'
+  });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.id === product.id);
@@ -145,6 +168,14 @@ const Index = () => {
                     {cart.length}
                   </Badge>
                 )}
+              </Button>
+              <Button 
+                variant={activeTab === 'profile' ? 'default' : 'ghost'} 
+                onClick={() => setActiveTab('profile')}
+                className="transition-all"
+              >
+                <Icon name="User" className="mr-2" size={18} />
+                Профиль
               </Button>
             </nav>
           </div>
@@ -441,7 +472,15 @@ const Index = () => {
                       </div>
                     </div>
                     <Button size="lg" className="w-full shadow-lg" onClick={() => {
-                      toast({ title: 'Заказ оформлен!', description: 'Мы свяжемся с вами в ближайшее время' });
+                      const newOrder: Order = {
+                        id: Date.now(),
+                        date: new Date().toLocaleDateString('ru-RU'),
+                        items: [...cart],
+                        total: getTotalPrice(),
+                        status: 'processing'
+                      };
+                      setOrders([newOrder, ...orders]);
+                      toast({ title: 'Заказ оформлен!', description: 'Проверьте статус в личном кабинете' });
                       setCart([]);
                     }}>
                       <Icon name="Check" className="mr-2" size={20} />
@@ -451,6 +490,206 @@ const Index = () => {
                 </Card>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Profile */}
+        {activeTab === 'profile' && (
+          <div className="animate-fade-in space-y-6">
+            <h2 className="text-4xl font-bold">Личный кабинет</h2>
+            
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Profile Info */}
+              <div className="lg:col-span-1">
+                <Card className="border-2 shadow-lg">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Профиль</CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setIsEditingProfile(!isEditingProfile)}
+                      >
+                        <Icon name={isEditingProfile ? "X" : "Pencil"} size={16} />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {!isEditingProfile ? (
+                      <>
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white text-2xl font-bold">
+                            {userProfile.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-lg">{userProfile.name}</p>
+                            <Badge variant="secondary">Активный покупатель</Badge>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-2">
+                            <Icon name="Mail" size={18} className="text-muted-foreground mt-1" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Email</p>
+                              <p className="font-medium">{userProfile.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <Icon name="Phone" size={18} className="text-muted-foreground mt-1" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Телефон</p>
+                              <p className="font-medium">{userProfile.phone}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <Icon name="MapPin" size={18} className="text-muted-foreground mt-1" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Адрес</p>
+                              <p className="font-medium">{userProfile.address}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="profile-name">Имя</Label>
+                          <Input 
+                            id="profile-name"
+                            value={userProfile.name}
+                            onChange={(e) => setUserProfile({...userProfile, name: e.target.value})}
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="profile-email">Email</Label>
+                          <Input 
+                            id="profile-email"
+                            type="email"
+                            value={userProfile.email}
+                            onChange={(e) => setUserProfile({...userProfile, email: e.target.value})}
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="profile-phone">Телефон</Label>
+                          <Input 
+                            id="profile-phone"
+                            value={userProfile.phone}
+                            onChange={(e) => setUserProfile({...userProfile, phone: e.target.value})}
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="profile-address">Адрес</Label>
+                          <Textarea 
+                            id="profile-address"
+                            value={userProfile.address}
+                            onChange={(e) => setUserProfile({...userProfile, address: e.target.value})}
+                            className="mt-2"
+                            rows={3}
+                          />
+                        </div>
+                        <Button className="w-full" onClick={() => {
+                          setIsEditingProfile(false);
+                          toast({ title: 'Профиль обновлён', description: 'Ваши данные успешно сохранены' });
+                        }}>
+                          <Icon name="Save" className="mr-2" size={18} />
+                          Сохранить
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Statistics */}
+                <Card className="border-2 mt-6 shadow-lg">
+                  <CardHeader>
+                    <CardTitle>Статистика</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Всего заказов:</span>
+                      <Badge variant="secondary" className="text-lg">{orders.length}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Записей снов:</span>
+                      <Badge variant="secondary" className="text-lg">{dreams.length}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Потрачено:</span>
+                      <Badge className="text-lg">{orders.reduce((sum, order) => sum + order.total, 0)} ₽</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Orders History */}
+              <div className="lg:col-span-2">
+                <Card className="border-2 shadow-lg">
+                  <CardHeader>
+                    <CardTitle>История заказов</CardTitle>
+                    <CardDescription>Все ваши покупки в одном месте</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {orders.length === 0 ? (
+                      <div className="py-12 text-center text-muted-foreground">
+                        <Icon name="Package" size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>У вас пока нет заказов</p>
+                        <Button className="mt-4" onClick={() => setActiveTab('catalog')}>
+                          Перейти в каталог
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {orders.map((order) => (
+                          <Card key={order.id} className="border animate-scale-in">
+                            <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-lg">Заказ №{order.id}</CardTitle>
+                                  <CardDescription>{order.date}</CardDescription>
+                                </div>
+                                <Badge 
+                                  variant={
+                                    order.status === 'completed' ? 'default' : 
+                                    order.status === 'shipped' ? 'secondary' : 
+                                    'outline'
+                                  }
+                                >
+                                  {order.status === 'completed' && <Icon name="CheckCircle2" size={14} className="mr-1" />}
+                                  {order.status === 'shipped' && <Icon name="Truck" size={14} className="mr-1" />}
+                                  {order.status === 'processing' && <Icon name="Clock" size={14} className="mr-1" />}
+                                  {order.status === 'completed' ? 'Завершён' : 
+                                   order.status === 'shipped' ? 'Доставляется' : 
+                                   'Обрабатывается'}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                {order.items.map((item) => (
+                                  <div key={item.id} className="flex justify-between items-center text-sm">
+                                    <span className="text-muted-foreground">
+                                      {item.name} × {item.quantity}
+                                    </span>
+                                    <span className="font-medium">{item.price * item.quantity} ₽</span>
+                                  </div>
+                                ))}
+                                <div className="border-t pt-2 flex justify-between items-center font-bold">
+                                  <span>Итого:</span>
+                                  <span className="text-primary text-lg">{order.total} ₽</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         )}
       </main>
